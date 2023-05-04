@@ -4,7 +4,7 @@ import { existsSync, promises as fspromises } from 'fs';
 import { CONFIG } from './config';
 import { FileInfo } from './models/file-info';
 import { Directories } from './models/directories'
-import { basename, extname, resolve } from 'path';
+// import { basename, extname, resolve } from 'path';
 import { doesFileHaveExifDate } from './helpers/does-file-have-exif-date';
 import { getAllFilesExceptJson } from './helpers/get-all-files-except-json';
 import { readPhotoTakenTimeFromGoogleJson } from './helpers/read-photo-taken-time-from-google-json';
@@ -18,8 +18,8 @@ class GooglePhotosExif extends Command {
   static description = `Takes in a directory path for an extracted Google Photos Takeout. Extracts all photo/video files (based on the conigured list of file extensions) and places them into an output directory. All files will have their modified timestamp set to match the timestamp specified in Google's JSON metadata files (where present). In addition, for file types that support EXIF, the EXIF "DateTimeOriginal" field will be set to the timestamp from Google's JSON metadata, if the field is not already set in the EXIF metadata.`;
 
   static flags = {
-    version: flags.version({char: 'v'}),
-    help: flags.help({char: 'h'}),
+    version: flags.version({ char: 'v' }),
+    help: flags.help({ char: 'h' }),
     inputDir: flags.string({
       char: 'i',
       description: 'Directory containing the extracted contents of Google Photos Takeout zip file',
@@ -37,10 +37,10 @@ class GooglePhotosExif extends Command {
     }),
   }
 
-  static args: Parser.args.Input  = []
+  static args: Parser.args.Input = []
 
   async run() {
-    const { args, flags} = this.parse(GooglePhotosExif);
+    const { flags } = this.parse(GooglePhotosExif);
     const { inputDir, outputDir, errorDir } = flags;
 
     try {
@@ -48,7 +48,7 @@ class GooglePhotosExif extends Command {
       await this.prepareDirectories(directories);
       await this.processMediaFiles(directories);
     } catch (error) {
-      this.error(error);
+      this.error((error as any).message);
       this.exit(1);
     }
 
@@ -96,53 +96,52 @@ class GooglePhotosExif extends Command {
     }
   }
 
-  
-  
   private async processMediaFiles(directories: Directories): Promise<void> {
     const supportedMediaFileExtensions = CONFIG.supportedMediaFileTypes.map(fileType => fileType.extension.toLowerCase());
 
     // Populate the FileInfo structure with all files in the source directory, except JSONs)
     this.log(`--- Getting all files in directory ${directories.input} ---`);
     const allFiles = await getAllFilesExceptJson(directories.input, directories.output);
-    
+
     // Print the number of found files by extension
     const allExtensionTypes = new Set();
-    for (const fi of allFiles) { allExtensionTypes.add(fi.fileExtensionLowerCased);  }
+    for (const fi of allFiles) {
+      allExtensionTypes.add(fi.fileExtensionLowerCased);
+    }
     const allExtensionTypesSorted = [...allExtensionTypes].sort();
     let totalFilesCount = 0;
-    for (const ext of allExtensionTypesSorted) { 
-      const count = allFiles.filter( fi => fi.fileExtensionLowerCased === ext ).length;
+    for (const ext of allExtensionTypesSorted) {
+      const count = allFiles.filter(fi => fi.fileExtensionLowerCased === ext).length;
       totalFilesCount += count;
-      const warn = ext != ".json" ? !supportedMediaFileExtensions.includes(<string>ext) ? "*** unsupported extension" : "" : "";
-      this.log (`    ${ext}  ${count} files  ${warn}`); 
+      // eslint-disable-next-line no-negated-condition
+      const warn = ext !== ".json" ? !supportedMediaFileExtensions.includes(ext as string) ? "*** unsupported extension" : "" : "";
+      this.log(`    ${ext}  ${count} files  ${warn}`);
     }
-    this.log (`    Total of ${totalFilesCount} non-JSON files found.`);
-      
+    this.log(`    Total of ${totalFilesCount} non-JSON files found.`);
+
     // Filter down to the media files only, and copy any files with unsupported extensions or missing JSON to the errors directory so that the user can manually inspect them
     this.log(`--- Finding supported media files (${supportedMediaFileExtensions.join(', ')}) ---`)
     const mediaFiles: FileInfo[] = [];
     let totalMissingJson = 0;
-    for (const fi of allFiles)
-    {
+    for (const fi of allFiles) {
       if (fi.isMediaFile) mediaFiles.push(fi);
-      
+
       else {
-        this.log (`    copying ${fi.fileName} to the errors directory due to unsupported extension.`);
-        copyWithJsonSidecar (fi, directories.error);   
+        this.log(`    copying ${fi.fileName} to the errors directory due to unsupported extension.`);
+        copyWithJsonSidecar(fi, directories.error);
       }
       if (!fi.jsonFileExists) {
         totalMissingJson++;
-        this.log (`    copying ${fi.fileName} to the errors directory due to missing JSON sidecar.`);
-        copyWithJsonSidecar (fi, directories.error);   
-      }
-      else if (!fi.jsonFileHasSize) {
+        this.log(`    copying ${fi.fileName} to the errors directory due to missing JSON sidecar.`);
+        copyWithJsonSidecar(fi, directories.error);
+      } else if (!fi.jsonFileHasSize) {
         totalMissingJson++;
-        this.log (`    copying ${fi.fileName} to the errors directory due to empty JSON sidecar.`);
-        copyWithJsonSidecar (fi, directories.error);
+        this.log(`    copying ${fi.fileName} to the errors directory due to empty JSON sidecar.`);
+        copyWithJsonSidecar(fi, directories.error);
       }
     }
-    this.log (`--- ${totalFilesCount} total files, ${mediaFiles.length} supported media files, of which ${totalMissingJson} media files' JSON sidecar could not be located. ---`);
-  
+    this.log(`--- ${totalFilesCount} total files, ${mediaFiles.length} supported media files, of which ${totalMissingJson} media files' JSON sidecar could not be located. ---`);
+
     // Show the media file counts
     const mediaFileCountsByExtension = new Map<string, number>();
     supportedMediaFileExtensions.forEach(supportedExtension => {
@@ -162,7 +161,7 @@ class GooglePhotosExif extends Command {
 
       // Copy the file into output directory
       this.log(`Copying file ${i} of ${mediaFiles.length}: ${mediaFile.filePath} -> ${mediaFile.outputFileName}`);
-      await copyFile(mediaFile.filePath, <string>mediaFile.outputFilePath);
+      await copyFile(mediaFile.filePath, mediaFile.outputFilePath as string);
 
       // Process the output file, setting the modified timestamp and/or EXIF metadata where necessary
       const photoTimeTaken = await readPhotoTakenTimeFromGoogleJson(mediaFile);
@@ -172,12 +171,12 @@ class GooglePhotosExif extends Command {
           const hasExifDate = await doesFileHaveExifDate(mediaFile.filePath);
           if (!hasExifDate) {
             await updateExifMetadata(mediaFile, photoTimeTaken, directories.error);
-            fileNamesWithEditedExif.push(<string>mediaFile.outputFileName);
+            fileNamesWithEditedExif.push(mediaFile.outputFileName as string);
             this.log(`Wrote "DateTimeOriginal" EXIF metadata to: ${mediaFile.outputFileName}`);
           }
         }
 
-        await updateFileModificationDate(<string>mediaFile.outputFilePath, photoTimeTaken);
+        await updateFileModificationDate(mediaFile.outputFilePath as string, photoTimeTaken);
       }
     }
 

@@ -1,7 +1,7 @@
 import { existsSync } from "fs"
 import { basename, dirname, extname, resolve } from 'path'
 
-export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string|null {
+export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string | null {
   const directoryPath = dirname(mediaFilePath);
   const mediaFileExtension = extname(mediaFilePath);
   let mediaFileNameWithoutExtension = basename(mediaFilePath, mediaFileExtension);
@@ -37,7 +37,7 @@ export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string|
       potentialJsonFileNames.push(`${name}.heic${counter}.json`);
     }
     // A reasonable approximation may also be to remove the counter
-    //potentialJsonFileNames.push(`${name}${mediaFileExtension}.json`);
+    // potentialJsonFileNames.push(`${name}${mediaFileExtension}.json`);
   }
 
   // Sometimes the media filename ends with extra dash (eg. filename_n-.jpg + filename_n.json)
@@ -64,10 +64,10 @@ export function getCompanionJsonPathForMediaFile(mediaFilePath: string): string|
 
   // It seems like the length of json file names is capped at 47
   if (mediaFileNameWithoutExtension.length > 46) {
-    potentialJsonFileNames.push(`${mediaFileNameWithoutExtension.slice(0,46)}.json`)
+    potentialJsonFileNames.push(`${mediaFileNameWithoutExtension.slice(0, 46)}.json`)
   }
 
-  // Bizarre rules with the lowest priority. There isn't a good way to detect these since they ar additions to the 
+  // Bizarre rules with the lowest priority. There isn't a good way to detect these since they ar additions to the
   // companion file so we will just always add them at the end.
   potentialJsonFileNames.push(`${mediaFileNameWithoutExtension}.j.json`)
   potentialJsonFileNames.push(`${mediaFileNameWithoutExtension}.jp.json`)

@@ -16,11 +16,11 @@ export async function updateExifMetadata(fileInfo: FileInfo, timeTaken: string, 
     await exiftool.write(fileInfo.outputFilePath, {
       DateTimeOriginal: timeTaken,
     });
-  
+
     await unlink(`${fileInfo.outputFilePath}_original`); // exiftool will rename the old file to {filename}_original, we can delete that
 
   } catch (error) {
-    await copyFile(fileInfo.outputFilePath,  resolve(errorDir, fileInfo.fileName));
+    await copyFile(fileInfo.outputFilePath, resolve(errorDir, fileInfo.fileName));
     if (fileInfo.jsonFileExists && fileInfo.jsonFileHasSize && fileInfo.jsonFileName && fileInfo.jsonFilePath) {
       await copyFile(fileInfo.jsonFilePath, resolve(errorDir, fileInfo.jsonFileName));
     }

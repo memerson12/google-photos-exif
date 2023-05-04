@@ -10,33 +10,31 @@ import { getCompanionJsonPathForMediaFile } from './get-companion-json-path-for-
 export async function getAllFilesExceptJson(inputDir: string, outputDir: string): Promise<FileInfo[]> {
   const supportedMediaFileExtensions = CONFIG.supportedMediaFileTypes.map(fileType => fileType.extension.toLowerCase());
 
-  let allFilePaths = await getAllFilesRecursively(inputDir);
+  const allFilePaths = await getAllFilesRecursively(inputDir);
   const dirIsEmpty = allFilePaths.length === 0;
   if (dirIsEmpty) {
     throw new Error('The search directory is empty, so there is no work to do. Check that your --inputDir contains all of the Google Takeout data, and that any zips have been extracted before running this tool');
-  }
-  else
-    allFilePaths.filter ( element => extname(element).toLowerCase() != ".json" );
+  } else
+    allFilePaths.filter(element => extname(element).toLowerCase() !== ".json");
 
-  
   const allFiles: FileInfo[] = [];
   const allUsedOutputFilesLowerCased: string[] = [];
 
   for (const filePath of allFilePaths) {
     const fileName = basename(filePath);
     const fileExtension = extname(filePath);
-    if (fileExtension == ".json") continue;
+    if (fileExtension === ".json") continue;
     const fileExtensionLowerCased = fileExtension.toLowerCase();
-    const isMediaFile = supportedMediaFileExtensions.includes(fileExtensionLowerCased);    
+    const isMediaFile = supportedMediaFileExtensions.includes(fileExtensionLowerCased);
     const supportsExif = doesFileSupportExif(filePath);
 
     const jsonFilePath = getCompanionJsonPathForMediaFile(filePath);   // intentionally not including a check for isMediaFile here because some unsupported files may nevertheless contain JSON sidecars
     const jsonFileName = jsonFilePath ? basename(jsonFilePath) : null;
     const jsonFileExists = jsonFilePath ? existsSync(jsonFilePath) : false;
-    const jsonFileHasSize = jsonFilePath && jsonFileExists ? statSync(jsonFilePath).size !== 0: false;
-    
+    const jsonFileHasSize = jsonFilePath && jsonFileExists ? statSync(jsonFilePath).size !== 0 : false;
+
     const outputFileName = isMediaFile ? generateUniqueOutputFileName(filePath, allUsedOutputFilesLowerCased) : null;
-    const outputFilePath = isMediaFile ? resolve(outputDir, <string>outputFileName) : null;
+    const outputFilePath = isMediaFile ? resolve(outputDir, outputFileName as string) : null;
 
     allFiles.push({
       filePath,

@@ -4,7 +4,7 @@ import { FileInfo } from '../models/file-info'
 
 const { readFile } = fspromises;
 
-export async function readPhotoTakenTimeFromGoogleJson(mediaFile: FileInfo): Promise<string|null> {
+export async function readPhotoTakenTimeFromGoogleJson(mediaFile: FileInfo): Promise<string | null> {
   if (!mediaFile.jsonFilePath || !mediaFile.jsonFileExists || !mediaFile.jsonFileHasSize) {
     return null;
   }
@@ -16,7 +16,7 @@ export async function readPhotoTakenTimeFromGoogleJson(mediaFile: FileInfo): Pro
     const photoTakenTimestamp = parseInt(googleJsonMetadata.photoTakenTime.timestamp, 10);
     const photoTakenDate = new Date(photoTakenTimestamp * 1000);
     return photoTakenDate.toISOString();
-  } else {
-    return null;
   }
+  return null;
+
 }
